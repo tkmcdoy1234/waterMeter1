@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3877299091466377" crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dauin Water - Consumer Portal</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00d2ff;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+        }
+
+        /* --- Login Overlay Styles --- */
+        #loginOverlay {
+            position: fixed; inset: 0;
+            background: var(--bg-dark);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2000; overflow-y: auto; padding: 20px;
+        }
+        .login-card {
+            background: var(--card-bg); padding: 40px; border-radius: 24px;
+            width: 100%; max-width: 400px; text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        input, textarea, select {
+            width: 100%; padding: 14px 18px; margin-bottom: 16px;
+            border: 1px solid #334155; border-radius: 12px;
+            background: #0f172a; color: white; font-size: 16px;
+            box-sizing: border-box; outline: none; transition: 0.2s;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,210,255,0.2); }
+
+        /* --- Header Styles --- */
+        header { padding: 30px 24px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .user-info h1 { margin: 0; font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .date-text { font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
+        .avatar { width: 48px; height: 48px; border-radius: 12px; background: #334155; overflow: hidden; border: 2px solid #334155; cursor: pointer; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* --- Layout Container --- */
+        .container { max-width: 500px; margin: 0 auto; display: none; }
+
+        /* --- Card Styles --- */
+        .card {
+            background: var(--card-bg); border-radius: 24px; padding: 24px;
+            margin: 0 20px 20px; position: relative; overflow: hidden;
+        }
+        .section-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 11px; font-weight: 700; color: var(--primary);
+            text-transform: uppercase; margin-bottom: 16px; letter-spacing: 1px;
+        }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+
+        /* --- Hero Flow Card --- */
+        .flow-card { text-align: center; padding: 40px 24px; }
+        .flow-value { font-size: 72px; font-weight: 800; line-height: 1; margin: 10px 0; }
+        .flow-unit { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+
+        /* --- Alert Card --- */
+        .alert-card { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .alert-title { color: var(--danger); font-weight: 700; font-size: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .alert-desc { font-size: 13px; color: #fca5a5; line-height: 1.5; }
+
+        /* --- Stats Grid --- */
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0 20px 20px; }
+        .stat-card { background: var(--card-bg); border-radius: 24px; padding: 20px; margin: 0; }
+        .stat-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; }
+        .stat-value { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+        .stat-meta { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+        .meta-up { color: var(--warning); }
+        .meta-ok { color: #2dd4bf; }
+
+        /* --- Bill Card --- */
+        .bill-amount { font-size: 42px; font-weight: 700; display: flex; align-items: flex-start; gap: 4px; }
+        .currency { font-size: 20px; margin-top: 8px; color: var(--text-muted); }
+        .bill-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+        .due-date { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+        .status-pill { padding: 6px 12px; border-radius: 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        /* --- Buttons --- */
+        .btn {
+            border: none; border-radius: 16px; font-size: 14px; font-weight: 700;
+            cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-pay {
+            background: var(--primary); color: #000; padding: 14px 28px;
+            box-shadow: 0 10px 20px -5px rgba(0,210,255,0.4);
+        }
+        .btn-pay:hover { transform: translateY(-2px); box-shadow: 0 15px 30px -5px rgba(0,210,255,0.5); }
+
+        .btn-primary { background: var(--primary); color: #000; width: 100%; padding: 16px; margin-top: 10px; }
+        .btn-link { background: none; color: var(--primary); font-size: 13px; text-decoration: none; margin-top: 15px; display: inline-block; font-weight: 600; }
+
+        /* --- Bottom Navigation --- */
+        .nav-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 80px;
+            background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(20px);
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.05); z-index: 1000;
+        }
+        .nav-item { color: var(--text-muted); cursor: pointer; transition: 0.2s; padding: 10px; border-radius: 12px; }
+        .nav-item.active { color: var(--primary); background: rgba(0,210,255,0.1); }
+
+        /* --- Tabs --- */
+        .view-section { display: none; }
+        .view-section.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Ticket Styles --- */
+        .ticket-item { border-bottom: 1px solid #334155; padding: 16px 0; }
+        .ticket-item:last-child { border: none; }
+        .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .ticket-type { font-weight: 700; font-size: 14px; }
+        .ticket-status { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
+        .status-open { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .status-resolved { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .ticket-details { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+        /* --- Modal --- */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 3000; padding: 20px; }
+        .modal-content { background: var(--card-bg); padding: 32px; border-radius: 28px; width: 100%; max-width: 400px; }
+
+    </style>
+</head>
+<body>
+    <div id="loginOverlay">
+        <div id="loginSection" class="login-card auth-section active">
+            <i data-lucide="droplets" style="color: var(--primary); width: 48px; height: 48px; margin-bottom: 24px;"></i>
+            <h1 style="margin-bottom:8px">Dauin Water</h1>
+            <p style="color:var(--text-muted); margin-bottom:32px">Login with your Meter ID</p>
+            <form onsubmit="handleLogin(event)">
+                <input type="text" id="loginMeterId" placeholder="Meter ID" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button type="submit" class="btn btn-primary" data-tilt>Sign In</button>
+            </form>
+            <button class="btn-link" onclick="toggleAuth('register')">Register New Account</button><br>
+            <button class="btn-link" onclick="toggleAuth('forgot')" style="opacity:0.7">Forgot Password?</button>
+            <p id="loginError" class="error-msg" style="color:var(--danger); font-size:13px; margin-top:16px; display:none">Invalid ID or Password</p>
+        </div>
+
+        <div id="registerSection" class="login-card auth-section" style="display:none">
+            <h1>Register</h1>
+            <p style="color:var(--text-muted); margin-bottom:24px">Link your water meter</p>
+            <form onsubmit="handleRegister(event)">
+                <input type="text" id="regMeterId" placeholder="Meter ID" required>
+                <input type="text" id="regAccountName" placeholder="Account Name (as per bill)" required>
+                <input type="tel" id="regMobileNumber" placeholder="Mobile Number (for SMS)" required pattern="[0-9]{10,11}">
+                <input type="password" id="regPassword" placeholder="Create Password" required>
+                <input type="text" id="regSecurityAnswer" placeholder="Security Question: Mother's Maiden Name?" required>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+            <button class="btn-link" onclick="toggleAuth('login')">Back to Login</button>
+            <p id="regError" class="error-msg" style="color:var(--danger); font-size:13px; margin-top:16px; display:none"></p>
+        </div>
+
+        <div id="forgotSection" class="login-card auth-section" style="display:none">
+            <h1>Recover</h1>
+            <p style="color:var(--text-muted); margin-bottom:24px">Reset your password</p>
+            <form onsubmit="handleForgotPassword(event)">
+                <input type="text" id="forgotMeterId" placeholder="Meter ID" required>
+                <div id="recoveryStep2" style="display:none">
+                    <p style="margin: 10px 0; font-size: 13px; color: var(--text-muted);">Security Question: Mother's Maiden Name?</p>
+                    <input type="text" id="forgotAnswer" placeholder="Your Answer">
+                    <input type="password" id="newPassword" placeholder="New Password">
+                </div>
+                <button type="submit" id="forgotBtn" class="btn btn-primary">Next</button>
+            </form>
+            <button class="btn-link" onclick="toggleAuth('login')">Back to Login</button>
+            <p id="forgotError" class="error-msg"></p>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <header>
+            <div class="user-info">
+                <div class="date-text" id="headerDate">Thursday, 24 Oct</div>
+                <h1 id="consumerName">Edwin Macias</h1>
+            </div>
+            <div style="position:relative">
+                <div class="avatar" onclick="openProfileModal()" title="Profile Settings">
+                    <img src="https://via.placeholder.com/100" id="userProfilePic">
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD TAB -->
+        <div id="dashboardTab" class="view-section active">
+            <div class="card flow-card">
+                <div class="section-label"><div class="dot"></div>Live Flow Rate</div>
+                <div id="liveFlowValue" class="flow-value">0.00</div>
+                <div class="flow-unit">M³/HR</div>
+            </div>
+
+            <div class="card alert-card" id="highUsageAlert" style="display:none">
+                <div class="alert-title"><i data-lucide="alert-triangle" style="width:16px"></i> HIGH USAGE DETECTED</div>
+                <div class="alert-desc">Continuous flow detected over the last 2 hours. Inspect fixtures for potential leaks.</div>
+            </div>
+
+            <div class="stats-row">
+                <div class="card stat-card">
+                    <div class="stat-label">Month Total</div>
+                    <div class="stat-value" id="todayVolume">0.00</div>
+                    <div class="flow-unit">M³</div>
+                    <div class="stat-meta meta-ok"><i data-lucide="check-circle" style="width:12px"></i> Active</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-label">Est. Monthly</div>
+                    <div class="stat-value" id="estMonthly">0.00</div>
+                    <div class="flow-unit">M³</div>
+                    <div class="stat-meta meta-ok"><i data-lucide="check-circle" style="width:12px"></i> On track</div>
+                </div>
+            </div>
+
+            <div class="card" onclick="showUnsettledModal()" style="cursor: pointer;">
+                <div class="bill-footer" style="margin-top:0; margin-bottom:16px">
+                    <div class="stat-label" style="margin:0">Total Balance</div>
+                    <div class="due-date"><i data-lucide="info" style="width:12px; vertical-align:middle"></i> Click to view details</div>
+                </div>
+                <div class="bill-amount"><span class="currency">₱</span><span id="projectedAmount">0.00</span></div>
+            </div>
+
+            <div class="card">
+                <div class="bill-footer" style="margin-top:0; margin-bottom:16px">
+                    <div class="stat-label" style="margin:0">Last Statement</div>
+                    <div class="status-pill" id="billStatusPill">No Bill</div>
+                </div>
+                <div class="bill-amount" style="margin-bottom:8px"><span class="currency">₱</span><span id="currentBillAmount">0.00</span></div>
+                <div id="periodCoveredHeader" style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Period: N/A</div>
+                <div class="bill-footer">
+                    <div class="due-date" id="lastBillDate">NO RECORD</div>
+                    <button id="btnPayNow" class="btn btn-pay" onclick="payWithHitPay()">Pay Now</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORY TAB -->
+        <div id="historyTab" class="view-section">
+            <div class="card">
+                <div class="section-label"><div class="dot"></div>Usage History</div>
+                <canvas id="usageChart" height="200"></canvas>
+            </div>
+            <div class="card">
+                <div class="section-label"><div class="dot"></div>Billing History</div>
+                <div id="billingHistory" style="max-height: 300px; overflow-y: auto;"></div>
+            </div>
+        </div>
+
+        <!-- TICKETS TAB -->
+        <div id="ticketsTab" class="view-section">
+            <div class="card">
+                <div class="section-label"><div class="dot"></div>Active Requests</div>
+                <button class="btn btn-primary" onclick="openReportModal()" style="margin-bottom:20px">+ New Request</button>
+                <div id="ticketList">
+                    <p style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px">No active requests.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="settingsTab" class="view-section">
+            <div class="card">
+                <div class="section-label"><div class="dot"></div>Account Settings</div>
+                <div style="text-align:center; margin-bottom:24px">
+                    <div class="avatar" style="width:80px; height:80px; margin:0 auto 12px; border:3px solid var(--primary);" onclick="triggerPhotoUpload()">
+                        <img src="https://via.placeholder.com/100" id="settingsProfilePic">
+                    </div>
+                    <p style="font-size:12px; color:var(--text-muted);">Tap photo to change</p>
+                    <input type="file" id="profilePhotoInput" style="display:none" accept="image/*" onchange="handlePhotoUpload(event)">
+                </div>
+
+                <p style="font-size:14px; margin-bottom:12px">Meter ID: <strong id="displayMeterId">---</strong></p>
+                <p style="font-size:14px; margin-bottom:20px">Status: <span id="accountStatusText" style="color:var(--success); font-weight:700">CONNECTED</span></p>
+
+                <div class="section-label"><div class="dot"></div>Security</div>
+                <button class="btn btn-primary" onclick="openChangePasswordModal()" style="background:#334155; color:white; margin-bottom:12px">Change Password</button>
+                <button class="btn btn-primary" onclick="logout()" style="background:#ef4444; color:white">Logout</button>
+            </div>
+        </div>
+
+        <nav class="nav-bar">
+            <div class="nav-item active" onclick="switchTab('dashboard', this)"><i data-lucide="layout-grid"></i></div>
+            <div class="nav-item" onclick="switchTab('history', this)"><i data-lucide="bar-chart-2"></i></div>
+            <div class="nav-item" onclick="switchTab('tickets', this)"><i data-lucide="mail"></i></div>
+            <div class="nav-item" onclick="switchTab('settings', this)"><i data-lucide="settings"></i></div>
+        </nav>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">New Request</h3>
+            <select id="reportType">
+                <option value="Leak Report">Leak Report</option>
+                <option id="optDisconnect" value="Disconnection Request">Request Disconnection</option>
+                <option id="optReconnect" value="Reconnection Request" style="display:none;">Request Reconnection</option>
+                <option value="Meter Issue">Meter Issue</option>
+            </select>
+            <textarea id="reportDetails" placeholder="Provide details about your request..." rows="4"></textarea>
+            <button class="btn btn-primary" onclick="submitReport()">Submit Request</button>
+            <button class="btn btn-link" onclick="closeReportModal()" style="width:100%; text-align:center">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Unsettled Bills Modal -->
+    <div id="unsettledModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Unsettled Bills</h3>
+            <div id="unsettledList" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+                <p style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px">No unsettled bills found.</p>
+            </div>
+            <button id="btnPaySelected" class="btn btn-primary" onclick="payWithHitPay()">Pay Selected Bills</button>
+            <button class="btn btn-link" onclick="closeUnsettledModal()" style="width:100%; text-align:center">Close</button>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Change Password</h3>
+            <input type="password" id="oldPass" placeholder="Current Password">
+            <input type="password" id="newPass" placeholder="New Password">
+            <input type="password" id="confirmNewPass" placeholder="Confirm New Password">
+            <button class="btn btn-primary" onclick="updatePassword()">Update Password</button>
+            <button class="btn btn-link" onclick="closeChangePasswordModal()" style="width:100%; text-align:center">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyDt1f2sPbv9jYYpwWB5S11vXN04qlMiLVY", authDomain: "dauin-water-meter-82c31.firebaseapp.com", projectId: "dauin-water-meter-82c31", storageBucket: "dauin-water-meter-82c31.firebasestorage.app", messagingSenderId: "104137748081", appId: "1:104137748081:web:a7367568f52d9eca5135d0", measurementId: "G-W1HB05C8KN" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        let myChart = null;
+        let allCurrentTickets = [];
+        let unsettledRecords = [];
+
+        lucide.createIcons();
+
+        // Set Today's Date
+        const options = { weekday: 'long', day: 'numeric', month: 'short' };
+        document.getElementById('headerDate').innerText = new Date().toLocaleDateString('en-US', options);
+
+        function toggleAuth(view) {
+            document.querySelectorAll('.auth-section').forEach(s => s.style.display = 'none');
+            document.getElementById(view + 'Section').style.display = 'block';
+        }
+
+        function switchTab(tab, el) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const mId = document.getElementById('loginMeterId').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+            const err = document.getElementById('loginError');
+            try {
+                const doc = await db.collection("accounts").doc(mId).get();
+                if (doc.exists && doc.data().password === pass) {
+                    sessionStorage.setItem("consumerMeterId", mId);
+                    sessionStorage.setItem("consumerName", doc.data().name);
+                    initDashboard();
+                } else { err.style.display = 'block'; }
+            } catch (err) { alert("Login Error"); }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const mId = document.getElementById('regMeterId').value.trim();
+            const name = document.getElementById('regAccountName').value.trim();
+            const phone = document.getElementById('regMobileNumber').value.trim();
+            const pass = document.getElementById('regPassword').value;
+            const answer = document.getElementById('regSecurityAnswer').value.trim().toLowerCase();
+            const err = document.getElementById('regError');
+
+            try {
+                const consumerDoc = await db.collection("consumers").doc(mId).get();
+                if (!consumerDoc.exists) {
+                    err.innerText = "Meter ID not recognized."; err.style.display = 'block'; return;
+                }
+                const accountDoc = await db.collection("accounts").doc(mId).get();
+                if (accountDoc.exists) {
+                    err.innerText = "Already registered."; err.style.display = 'block'; return;
+                }
+
+                await db.collection("consumers").doc(mId).update({ phoneNumber: phone });
+
+                await db.collection("accounts").doc(mId).set({
+                    meterId: mId, name: name, phoneNumber: phone, password: pass, securityAnswer: answer,
+                    status: consumerDoc.data().status || "Connected",
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert("Successful! Login now.");
+                toggleAuth('login');
+            } catch (error) { alert("Error: " + error.message); }
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            const mId = document.getElementById('forgotMeterId').value.trim();
+            if (!recoveryDoc) {
+                const doc = await db.collection("accounts").doc(mId).get();
+                if (doc.exists) {
+                    recoveryDoc = doc;
+                    document.getElementById('recoveryStep2').style.display = 'block';
+                    document.getElementById('forgotMeterId').disabled = true;
+                    document.getElementById('forgotBtn').innerText = "Update Password";
+                } else { alert("Meter ID not found."); }
+            } else {
+                const answer = document.getElementById('forgotAnswer').value.trim().toLowerCase();
+                const newPass = document.getElementById('newPassword').value;
+                if (answer === recoveryDoc.data().securityAnswer) {
+                    await db.collection("accounts").doc(mId).update({ password: newPass });
+                    alert("Success!"); location.reload();
+                } else { alert("Incorrect answer."); }
+            }
+        }
+        let recoveryDoc = null;
+
+        function initDashboard() {
+            const mId = sessionStorage.getItem("consumerMeterId");
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('displayMeterId').innerText = mId;
+            document.getElementById('consumerName').innerText = sessionStorage.getItem("consumerName");
+
+            db.collection("accounts").doc(mId).onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const status = data.status || "Connected";
+                    document.getElementById('accountStatusText').innerText = status.toUpperCase();
+                    document.getElementById('optDisconnect').style.display = (status === "Connected" ? "block" : "none");
+                    document.getElementById('optReconnect').style.display = (status === "Disconnected" ? "block" : "none");
+
+                    if (data.profilePic) {
+                        document.getElementById('userProfilePic').src = data.profilePic;
+                        document.getElementById('settingsProfilePic').src = data.profilePic;
+                    }
+                }
+            });
+
+            loadBillingData(mId);
+            loadTicketHistory(mId);
+            listenToLiveFlow(mId);
+        }
+
+        function triggerPhotoUpload() { document.getElementById('profilePhotoInput').click(); }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64Image = e.target.result;
+                const mId = sessionStorage.getItem("consumerMeterId");
+                try {
+                    await db.collection("accounts").doc(mId).update({ profilePic: base64Image });
+                    alert("Profile picture updated!");
+                } catch (err) { alert("Upload failed: " + err.message); }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function openChangePasswordModal() { document.getElementById('passwordModal').style.display = 'flex'; }
+        function closeChangePasswordModal() { document.getElementById('passwordModal').style.display = 'none'; }
+
+        async function updatePassword() {
+            const mId = sessionStorage.getItem("consumerMeterId");
+            const oldP = document.getElementById('oldPass').value;
+            const newP = document.getElementById('newPass').value;
+            const confirmP = document.getElementById('confirmNewPass').value;
+
+            if (newP !== confirmP) return alert("Passwords do not match.");
+            if (newP.length < 4) return alert("Password too short.");
+
+            try {
+                const doc = await db.collection("accounts").doc(mId).get();
+                if (doc.data().password !== oldP) return alert("Current password incorrect.");
+
+                await db.collection("accounts").doc(mId).update({ password: newPass });
+                alert("Password updated successfully!");
+                closeChangePasswordModal();
+            } catch (err) { alert("Update failed."); }
+        }
+
+        function listenToLiveFlow(meterId) {
+            db.collection("billings")
+                .where("meterId", "==", meterId)
+                .orderBy("date", "desc")
+                .limit(1)
+                .onSnapshot(snap => {
+                    if (!snap.empty) {
+                        const data = snap.docs[0].data();
+                        const usage = data.usage || 0;
+                        document.getElementById('todayVolume').innerText = usage.toFixed(2);
+                        const estimate = usage * 1.05;
+                        document.getElementById('estMonthly').innerText = estimate.toFixed(2);
+                        document.getElementById('liveFlowValue').innerText = (usage / 720).toFixed(2);
+                    }
+                });
+        }
+
+        function loadTicketHistory(meterId) {
+            const container = document.getElementById('ticketList');
+            db.collection("tickets").where("meterId", "==", meterId).onSnapshot(snap => {
+                allCurrentTickets = [];
+                if (snap.empty) { container.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px">No active requests.</p>'; return; }
+
+                container.innerHTML = '';
+                snap.forEach(d => {
+                    const t = d.data();
+                    allCurrentTickets.push(t);
+                    const statusClass = t.status === 'Resolved' ? 'status-resolved' : 'status-open';
+                    container.innerHTML += `
+                        <div class="ticket-item">
+                            <div class="ticket-header">
+                                <div class="ticket-type">${t.type}</div>
+                                <div class="ticket-status ${statusClass}">${t.status.toUpperCase()}</div>
+                            </div>
+                            <div class="ticket-details">${t.details}</div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function loadBillingData(meterId) {
+            db.collection("billings").where("meterId", "==", meterId).orderBy("date", "desc").onSnapshot(snap => {
+                let records = [];
+                snap.forEach(doc => {
+                    records.push(doc.data());
+                });
+
+                unsettledRecords = records.filter(r => r.status === 'Unpaid');
+                const totalBalance = unsettledRecords.reduce((sum, r) => sum + (sum.amount || 0), 0);
+                document.getElementById('projectedAmount').innerText = totalBalance.toFixed(2);
+
+                // Hide/Show Pay Now based on total balance
+                const payNowBtn = document.getElementById('btnPayNow');
+                const payAllUnsettledBtn = document.getElementById('btnPayAllUnsettled');
+
+                if (totalBalance <= 0) {
+                    if (payNowBtn) payNowBtn.style.display = 'none';
+                    if (payAllUnsettledBtn) payAllUnsettledBtn.style.display = 'none';
+                } else {
+                    if (payNowBtn) payNowBtn.style.display = 'inline-block';
+                    if (payAllUnsettledBtn) payAllUnsettledBtn.style.display = 'inline-block';
+                }
+
+                if (records.length > 0) {
+                    const latest = records[0];
+                    document.getElementById('currentBillAmount').innerText = latest.amount.toFixed(2);
+                    document.getElementById('billStatusPill').innerText = latest.status;
+                    document.getElementById('billStatusPill').style.background = latest.status === 'Paid' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+                    document.getElementById('billStatusPill').style.color = latest.status === 'Paid' ? 'var(--success)' : 'var(--danger)';
+                    document.getElementById('lastBillDate').innerText = "DUE " + latest.date.split(' ')[0];
+                    document.getElementById('periodCoveredHeader').innerText = "Period: " + (latest.periodCovered || "N/A");
+
+                    if (records.length > 1) {
+                        const previousRecords = records.slice(1, 5);
+                        const avgUsage = previousRecords.reduce((sum, r) => sum + (r.usage || 0), 0) / previousRecords.length;
+
+                        if (latest.usage > avgUsage * 2 && avgUsage > 0) {
+                            document.getElementById('highUsageAlert').style.display = 'block';
+                            document.getElementById('highUsageAlert').querySelector('.alert-desc').innerText =
+                                `Potential spike detected! Your current usage (${latest.usage.toFixed(2)} m³) is significantly higher than your average (${avgUsage.toFixed(2)} m³). Please check for leaks.`;
+                        } else {
+                            document.getElementById('highUsageAlert').style.display = 'none';
+                        }
+                    } else {
+                        document.getElementById('highUsageAlert').style.display = 'none';
+                    }
+                }
+
+                const hist = document.getElementById('billingHistory');
+                hist.innerHTML = '';
+                records.forEach(r => {
+                    hist.innerHTML += `
+                        <div class="ticket-item">
+                            <div class="ticket-header">
+                                <div class="ticket-type">${r.date}</div>
+                                <div class="ticket-status ${r.status === 'Paid' ? 'status-resolved' : 'status-open'}">${r.status}</div>
+                            </div>
+                            <div class="ticket-details">
+                                Period: ${r.periodCovered || 'N/A'}<br>
+                                Usage: ${r.usage} m³ | Amount: ₱${r.amount.toFixed(2)}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                updateChart(records.slice(0,6).reverse());
+            });
+        }
+
+        function updateChart(data) {
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(r => r.date.split(' ')[0]),
+                    datasets: [{
+                        label: 'Usage (m³)',
+                        data: data.map(r => r.usage),
+                        borderColor: '#00d2ff',
+                        backgroundColor: 'rgba(0, 210, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#00d2ff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        function openReportModal() {
+            if (allCurrentTickets.some(t => t.status !== 'Resolved')) {
+                alert("You already have an active request."); return;
+            }
+            document.getElementById('reportModal').style.display = 'flex';
+        }
+        function closeReportModal() { document.getElementById('reportModal').style.display = 'none'; }
+
+        function showUnsettledModal() {
+            const list = document.getElementById('unsettledList');
+            if (unsettledRecords.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; padding:20px">No unsettled bills found.</p>';
+                document.getElementById('btnPaySelected').style.display = 'none';
+            } else {
+                list.innerHTML = '';
+                unsettledRecords.forEach((r, index) => {
+                    list.innerHTML += `
+                        <div class="ticket-item" style="display: flex; align-items: center; gap: 15px;">
+                            <input type="checkbox" class="bill-checkbox" data-amount="${r.amount}" onchange="updateSelectedTotal()" checked style="width: 20px; height: 20px; margin: 0;">
+                            <div style="flex: 1;">
+                                <div class="ticket-header" style="margin-bottom: 0;">
+                                    <div class="ticket-type">${r.date}</div>
+                                    <div class="ticket-status status-open">UNPAID</div>
+                                </div>
+                                <div class="ticket-details">
+                                    Period: ${r.periodCovered || 'N/A'}<br>
+                                    Usage: ${r.usage} m³ | Amount: ₱${r.amount.toFixed(2)}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('btnPaySelected').style.display = 'block';
+                updateSelectedTotal();
+            }
+            document.getElementById('unsettledModal').style.display = 'flex';
+        }
+
+        function updateSelectedTotal() {
+            const checkboxes = document.querySelectorAll('.bill-checkbox:checked');
+            let total = 0;
+            checkboxes.forEach(cb => total += parseFloat(cb.dataset.amount));
+            document.getElementById('btnPaySelected').innerText = `Pay Selected (₱${total.toFixed(2)})`;
+            document.getElementById('btnPaySelected').disabled = total <= 0;
+        }
+
+        function closeUnsettledModal() { document.getElementById('unsettledModal').style.display = 'none'; }
+
+        async function submitReport() {
+            const t = document.getElementById('reportType').value, d = document.getElementById('reportDetails').value.trim();
+            if (!d) return alert("Details required.");
+            try {
+                await db.collection("tickets").add({
+                    meterId: sessionStorage.getItem("consumerMeterId"),
+                    accountName: sessionStorage.getItem("consumerName"),
+                    type: t, details: d, status: 'Open',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert("Submitted."); closeReportModal();
+            } catch (e) { alert("Error"); }
+        }
+
+        function payWithHitPay() {
+            const checkboxes = document.querySelectorAll('.bill-checkbox:checked');
+            let total = 0;
+            checkboxes.forEach(cb => total += parseFloat(cb.dataset.amount));
+
+            if (total > 0) {
+                window.location.href = "https://hitpay.shop/dauinwater";
+            } else {
+                alert("Please select at least one bill to pay.");
+            }
+        }
+
+        function logout() { sessionStorage.clear(); location.reload(); }
+        if (sessionStorage.getItem("consumerMeterId")) initDashboard();
+    </script>
+</body>
+</html>

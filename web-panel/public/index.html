@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3877299091466377" crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dauin Water - Treasurer Panel</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e4d40;
+            --primary-light: #2d6a5a;
+            --sidebar-bg: #1a222c;
+            --main-bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --accent: #bcf0da;
+            --blue: #3b82f6;
+        }
+
+        body { margin: 0; font-family: 'Inter', sans-serif; display: flex; height: 100vh; background-color: var(--main-bg); color: var(--text-main); overflow: hidden; }
+
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 20px 0; position: fixed; left: -260px; top: 0; height: 100%; z-index: 3000; transition: left 0.3s ease; box-shadow: 4px 0 10px rgba(0,0,0,0.2); }
+        .sidebar.active { left: 0; }
+        .sidebar-header { display: flex; align-items: center; padding: 0 24px; margin-bottom: 40px; }
+        .logo-circle { width: 40px; height: 40px; background-color: #2d3748; border: 2px solid #4a5568; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold; font-size: 20px; }
+        .nav-item { display: flex; align-items: center; padding: 14px 24px; color: #a0aec0; text-decoration: none; cursor: pointer; transition: 0.2s; font-size: 15px; }
+        .nav-item i { margin-right: 14px; width: 20px; }
+        .nav-item:hover { color: white; background-color: #2d3748; }
+        .nav-item.active { color: white; background-color: #2d3748; border-radius: 0 25px 25px 0; margin-right: 15px; }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; width: 100%; overflow-y: auto; position: relative; }
+
+        .top-header { background-color: var(--primary); padding: 20px 40px 60px; color: white; }
+        .header-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .menu-btn { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 16px; opacity: 0.9; }
+        .view-title { margin: 0; font-size: 28px; font-weight: 600; }
+
+        .view-container { padding: 0 40px; margin-top: -40px; padding-bottom: 40px; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; border: 1px solid #eef2f6; }
+        .stat-card h3 { margin: 0; font-size: 14px; color: var(--text-muted); font-weight: 600; }
+        .stat-card .value { margin: 8px 0; font-size: 24px; font-weight: bold; color: var(--text-main); }
+        .circle-progress { width: 60px; height: 60px; border-radius: 50%; border: 5px solid #f1f5f9; border-top-color: #4dbda3; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+
+        .content-card { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); border: 1px solid #eef2f6; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px 15px; color: var(--text-muted); font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9; background: #fafafa; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+
+        .search-row { display: flex; gap: 12px; margin-bottom: 20px; }
+        .search-input-wrapper { flex: 1; position: relative; }
+        .search-input-wrapper input { width: 100%; padding: 12px 15px 12px 40px; border: 1px solid #e2e8f0; border-radius: 25px; outline: none; box-sizing: border-box; }
+        .search-input-wrapper i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+
+        .btn { padding: 10px 20px; border-radius: 20px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 14px; transform-style: preserve-3d; display: inline-block; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-secondary { background-color: #e2e8f0; color: #475569; }
+        .btn-accent { background-color: var(--accent); color: var(--primary); }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+
+        #loginOverlay { position: fixed; inset: 0; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 4000; }
+        .login-box { background: white; padding: 40px; border-radius: 24px; width: 100%; max-width: 360px; text-align: center; }
+        .login-box input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; }
+
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 13px; color: var(--text-muted); }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+
+    </style>
+</head>
+<body>
+
+    <div id="loginOverlay">
+        <div class="login-box">
+            <i data-lucide="droplets" style="color: var(--primary); width: 48px; height: 48px; margin-bottom: 16px;"></i>
+            <h2>Treasurer Login</h2>
+            <form onsubmit="handleLoginSubmit(event)">
+                <input type="text" id="loginUsername" placeholder="Username" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button type="submit" class="btn btn-primary" style="width:100%" data-tilt data-tilt-scale="1.05">SIGN IN</button>
+            </form>
+            <p id="loginError" style="color:red; display:none; margin-top:15px;">Invalid credentials</p>
+        </div>
+    </div>
+
+    <div id="imageModal" style="display:none; position:fixed; z-index:5000; inset:0; background:rgba(0,0,0,0.8); text-align:center;" onclick="this.style.display='none'">
+        <img id="modalImg" style="max-width:90%; max-height:90%; margin-top:50px; border:5px solid white; border-radius:8px;">
+    </div>
+
+    <div class="sidebar" id="sidebar" onmouseleave="closeSidebar()">
+        <div class="sidebar-header"><div class="logo-circle" id="sidebarLogo">T</div><div style="font-weight:bold; margin-left:10px;">Dauin Water</div></div>
+        <div class="nav-item active" onclick="switchView('dashboard', this)"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+        <div class="nav-item" onclick="switchView('billings', this)"><i data-lucide="receipt"></i> Billings</div>
+        <div class="nav-item" onclick="switchView('consumers', this)"><i data-lucide="users"></i> Consumers</div>
+        <div class="nav-item" onclick="switchView('inbox', this)"><i data-lucide="mail"></i> Inbox</div>
+        <div class="nav-item" onclick="switchView('reports', this)"><i data-lucide="bar-chart-3"></i> Reports</div>
+        <div class="nav-item" onclick="switchView('settings', this)"><i data-lucide="settings"></i> Settings</div>
+    </div>
+
+    <div class="main-content" id="mainContent" style="display:none">
+        <div class="top-header">
+            <div class="header-top-row">
+                <button class="menu-btn" onclick="toggleSidebar(event)"><i data-lucide="menu"></i> Menu</button>
+                <button class="btn" style="background: rgba(255,255,255,0.1); color:white" onclick="logout()" data-tilt data-tilt-scale="1.1">LOGOUT</button>
+            </div>
+            <h1 class="view-title" id="viewTitle">Dashboard</h1>
+        </div>
+
+        <div class="view-container">
+
+            <div id="dashboardView" class="view-section active">
+                <div class="stat-grid">
+                    <div class="stat-card"><div><h3>Collected</h3><div class="value" id="statCollected">₱0.00</div></div><div class="circle-progress" id="progressCollected">0%</div></div>
+                    <div class="stat-card"><div><h3>Outstanding</h3><div class="value" id="statOutstanding" style="color:var(--danger)">₱0.00</div></div><div class="circle-progress" style="border-top-color:var(--danger)" id="progressUnpaid">0%</div></div>
+                    <div class="stat-card"><div><h3>Accounts</h3><div class="value" id="statTotalConsumers">0</div></div><div class="circle-progress" style="border-top-color:var(--blue)">0%</div></div>
+                    <div class="stat-card"><div><h3>Readings</h3><div class="value" id="statTotalReadings">0</div></div><div class="circle-progress" style="border-top-color:var(--accent)">0%</div></div>
+                </div>
+                <div class="content-card"><h3>Revenue Flow</h3><canvas id="revenueChart" height="100"></canvas></div>
+            </div>
+
+            <div id="billingsView" class="view-section">
+                <div class="search-row" style="display:flex; align-items:center; gap:12px;">
+                    <div class="search-input-wrapper" style="flex:1;"><i data-lucide="search"></i><input type="text" id="searchMeterId" placeholder="Enter Meter ID..." onkeyup="if(event.key==='Enter')handleSearch()"></div>
+                    <button class="btn btn-primary" onclick="handleSearch()" data-tilt data-tilt-scale="1.05">SEARCH</button>
+                    <button class="btn btn-secondary" onclick="clearSearch()" data-tilt data-tilt-scale="1.05">CLEAR</button>
+                    <button id="btnExport" class="btn btn-accent" style="display:none" onclick="openSOAModal()" data-tilt data-tilt-scale="1.05">SOA (PDF)</button>
+                </div>
+                <div class="content-card"><table id="billingTable"><thead><tr><th>Photo</th><th>ID</th><th>Date</th><th>Usage</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="billingBody"></tbody></table></div>
+            </div>
+
+            <div id="consumersView" class="view-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"><h3>Consumers</h3><button class="btn btn-primary btn-sm" onclick="showAddConsumerModal()" data-tilt data-tilt-scale="1.05">+ ENROLL</button></div>
+                <div id="addConsumerForm" style="display:none; background:white; padding:20px; border-radius:12px; margin-bottom:20px; border:1px solid #ddd;">
+                    <h4 id="consumerFormTitle">Enroll New Consumer</h4>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                        <div class="form-group"><label>Meter ID</label><input type="text" id="newMeterId"></div>
+                        <div class="form-group"><label>Account Name</label><input type="text" id="newAccountName"></div>
+                        <div class="form-group"><label>Barangay</label><select id="newBarangay"><option value="Anhawan">Anhawan</option><option value="Apo Island">Apo Island</option><option value="Bagacay">Bagacay</option><option value="Baslay">Baslay</option><option value="Batuhon Dacu">Batuhon Dacu</option><option value="Boloc-boloc">Boloc-boloc</option><option value="Bulak">Bulak</option><option value="Bunga">Bunga</option><option value="Casile">Casile</option><option value="Libjo">Libjo</option><option value="Lipayo">Lipayo</option><option value="Maayongtubig">Maayongtubig</option><option value="Mag-aso">Mag-aso</option><option value="Magsaysay">Magsaysay</option><option value="Malongcay Dacu">Malongcay Dacu</option><option value="Masaplod Norte">Masaplod Norte</option><option value="Masaplod Sur">Masaplod Sur</option><option value="Panubtuban">Panubtuban</option><option value="Poblacion I">Poblacion I</option><option value="Poblacion II">Poblacion II</option><option value="Poblacion III">Poblacion III</option><option value="Tugawe">Tugawe</option><option value="Tunga-tunga">Tunga-tunga</option></select></div>
+                        <div class="form-group"><label>Status</label><select id="newAccountStatus"><option value="Connected">Connected</option><option value="Disconnected">Disconnected</option></select></div>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveConsumer()" data-tilt data-tilt-scale="1.05">SAVE</button>
+                    <button class="btn btn-secondary" onclick="hideAddConsumerModal()" data-tilt data-tilt-scale="1.05">CANCEL</button>
+                </div>
+                <div class="content-card"><table id="consumerTable"><thead><tr><th>ID</th><th>Account</th><th>Barangay</th><th>Status</th><th>Action</th></tr></thead><tbody id="consumerBody"></tbody></table></div>
+            </div>
+
+            <div id="inboxView" class="view-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3>Support Inbox</h3>
+                    <div id="inboxBatchActions" style="display:none;">
+                        <button class="btn btn-danger btn-sm" onclick="batchDeleteInbox()" data-tilt data-tilt-scale="1.05">DELETE SELECTED</button>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <table id="inboxTable">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllInbox" onclick="toggleSelectAllInbox(this)"></th>
+                                <th>Date</th>
+                                <th>Meter ID</th>
+                                <th>Type</th>
+                                <th>Details</th>
+                                <th>Status</th>
+                                <th>Update</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inboxBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="reportsView" class="view-section">
+                <div class="report-summary-card"><h4>Revenue</h4><p>Total Revenue: <strong id="reportTotalRevenue">₱0.00</strong></p><p>Total Collected: <strong id="reportTotalCollected">₱0.00</strong></p></div>
+                <button class="btn btn-primary" onclick="generateRevenueReport()" data-tilt data-tilt-scale="1.05">PDF REPORT</button>
+            </div>
+
+            <div id="settingsView" class="view-section">
+                <div class="content-card" style="max-width: 500px;">
+                    <h3>Account Settings</h3>
+                    <div style="text-align:center; margin-bottom: 20px;"><img id="adminProfilePic" src="https://via.placeholder.com/120" style="width:120px; height:120px; border-radius:50%; border: 4px solid var(--primary); object-fit:cover;"><input type="file" onchange="previewProfilePic(event)" style="display:block; margin: 10px auto;"></div>
+                    <div class="form-group"><label>Full Name</label><input type="text" id="profileFullName"></div>
+                    <div class="form-group"><label>Position</label><input type="text" id="profilePosition"></div>
+                    <div class="form-group"><label>Current Password</label><input type="password" id="currentPass"></div>
+                    <div class="form-group"><label>New Password (Optional)</label><input type="password" id="newPass"></div>
+                    <button class="btn btn-primary" style="width:100%" onclick="updateAdminSettings()" data-tilt data-tilt-scale="1.05">UPDATE PROFILE</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SOA Modal -->
+    <div id="soaSelectionModal" style="display:none; position:fixed; z-index:4500; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:24px; width:400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+            <h3 style="margin-top:0">Statement Generation</h3>
+            <p>Select billing months to include:</p>
+            <div id="soaMonthList" style="max-height:250px; overflow-y:auto; margin:20px 0; border:1px solid #f1f5f9; padding:10px; border-radius:12px;"></div>
+            <div style="display:flex; gap:10px;"><button class="btn btn-primary" style="flex:1" onclick="processSOASelection()" data-tilt data-tilt-scale="1.05">GENERATE</button><button class="btn btn-secondary" style="flex:1" onclick="closeSOAModal()" data-tilt data-tilt-scale="1.05">CANCEL</button></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyDt1f2sPbv9jYYpwWB5S11vXN04qlMiLVY", authDomain: "dauin-water-meter-82c31.firebaseapp.com", projectId: "dauin-water-meter-82c31", storageBucket: "dauin-water-meter-82c31.firebasestorage.app", messagingSenderId: "104137748081", appId: "1:104137748081:web:a7367568f52d9eca5135d0", measurementId: "G-W1HB05C8KN" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        let myChart = null, unsubscribeDashboard = null, currentRecords = [], currentMeterId = "";
+
+        lucide.createIcons();
+
+        function toggleSidebar(e) { e.stopPropagation(); document.getElementById('sidebar').classList.toggle('active'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('active'); }
+        document.addEventListener('click', (e) => { if (document.getElementById('sidebar') && !document.getElementById('sidebar').contains(e.target)) closeSidebar(); });
+
+        async function attemptLogin() {
+            const user = document.getElementById('loginUsername').value, pass = document.getElementById('loginPassword').value;
+            if (user === "admin" && pass === "dauin123") { sessionStorage.setItem("isLoggedIn", "true"); sessionStorage.setItem("username", "admin"); sessionStorage.setItem("role", "admin"); checkAuth(); return; }
+            const doc = await db.collection("settings").doc("admin").get();
+            if (doc.exists && user === "admin" && pass === doc.data().password) { sessionStorage.setItem("isLoggedIn", "true"); sessionStorage.setItem("username", "admin"); sessionStorage.setItem("role", "admin"); checkAuth(); return; }
+            document.getElementById('loginError').style.display = 'block';
+        }
+
+        function checkAuth() { if (sessionStorage.getItem("isLoggedIn") === "true") { document.getElementById('loginOverlay').style.display = 'none'; document.getElementById('mainContent').style.display = 'block'; startLiveDashboard(); loadAdminProfile(); if (sessionStorage.getItem("role") === 'admin') loadInbox(); } }
+        function logout() { sessionStorage.clear(); location.reload(); }
+
+        function startLiveDashboard() {
+            if (unsubscribeDashboard) unsubscribeDashboard();
+            unsubscribeDashboard = db.collection("billings").onSnapshot(snap => {
+                let paid = 0, unpaid = 0; let dailyData = { 'Sun': 0, 'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 0 };
+                snap.forEach(doc => { const d = doc.data(); if (d.status === 'Paid') paid += (d.amount || 0); else unpaid += (d.amount || 0); dailyData[['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()]] += (d.amount || 0); });
+                document.getElementById('statCollected').innerText = '₱' + paid.toLocaleString();
+                document.getElementById('statOutstanding').innerText = '₱' + unpaid.toLocaleString();
+                document.getElementById('statTotalReadings').innerText = snap.size;
+                const total = paid + unpaid;
+                document.getElementById('progressCollected').innerText = total > 0 ? Math.round((paid/total)*100) + '%' : '0%';
+                document.getElementById('progressUnpaid').innerText = total > 0 ? Math.round((unpaid/total)*100) + '%' : '0%';
+                updateRevenueChart(dailyData);
+            });
+            db.collection("consumers").onSnapshot(snap => {
+                document.getElementById('statTotalConsumers').innerText = snap.size;
+            });
+        }
+
+        function updateRevenueChart(dailyData) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, { type: 'line', data: { labels: Object.keys(dailyData), datasets: [{ label: 'Revenue', data: Object.values(dailyData), borderColor: '#1e4d40', backgroundColor: 'rgba(30, 77, 64, 0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, plugins: { legend: { display: false } } } });
+        }
+
+        async function loadAdminProfile() {
+            const user = sessionStorage.getItem("username"), doc = await db.collection("settings").doc(user).get();
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.profilePic) document.getElementById('adminProfilePic').src = data.profilePic;
+                if (data.fullName) document.getElementById('profileFullName').value = data.fullName;
+                if (data.position) document.getElementById('profilePosition').value = data.position;
+            }
+        }
+
+        function switchView(view, el) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); el.classList.add('active');
+            document.getElementById('viewTitle').innerText = view.charAt(0).toUpperCase() + view.slice(1);
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active')); document.getElementById(view + 'View').classList.add('active');
+            if(view === 'consumers') loadComprehensiveAccounts();
+            if(view === 'reports') loadReportsData();
+            if(view === 'inbox') loadInbox();
+            closeSidebar();
+        }
+
+        function handleSearch() {
+            const id = document.getElementById('searchMeterId').value.trim(); if(!id) return;
+            currentMeterId = id;
+            db.collection("billings").where("meterId", "==", id).orderBy("date", "desc").onSnapshot(snap => {
+                const body = document.getElementById('billingBody'); body.innerHTML = '';
+                if(snap.empty) { body.innerHTML = '<tr><td colspan="7">No records</td></tr>'; return; }
+                document.getElementById('btnExport').style.display = 'block';
+                currentRecords = [];
+                snap.forEach(doc => {
+                    const b = doc.data();
+                    b.id = doc.id;
+                    currentRecords.push(b);
+                    body.innerHTML += `<tr><td><div style="width:40px;height:40px;background:#eee;border-radius:8px"></div></td><td>${b.meterId}</td><td>${b.date}</td><td>${b.usage}</td><td>₱${b.amount}</td><td><span class="badge ${b.status === 'Paid' ? 'badge-success' : 'badge-danger'}">${b.status}</span></td><td><button class="btn btn-primary btn-sm" onclick="toggleStatus('${doc.id}', '${b.status}')" data-tilt data-tilt-scale="1.1">PAY/UNPAY</button></td></tr>`;
+                });
+                VanillaTilt.init(document.querySelectorAll(".btn-primary"));
+            });
+        }
+
+        async function toggleStatus(docId, currentStatus) {
+            const newStatus = currentStatus === 'Paid' ? 'Unpaid' : 'Paid';
+            await db.collection("billings").doc(docId).update({ status: newStatus });
+        }
+
+        function clearSearch() {
+            document.getElementById('searchMeterId').value = '';
+            document.getElementById('billingBody').innerHTML = '';
+            document.getElementById('btnExport').style.display = 'none';
+            currentRecords = [];
+        }
+
+        function openSOAModal() {
+            const modal = document.getElementById('soaSelectionModal');
+            const list = document.getElementById('soaMonthList');
+            list.innerHTML = '';
+            const months = [...new Set(currentRecords.map(r => r.date.substring(0, 7)))];
+            months.forEach(m => {
+                list.innerHTML += `<div><input type="checkbox" value="${m}" checked> ${m}</div>`;
+            });
+            modal.style.display = 'flex';
+            VanillaTilt.init(document.querySelectorAll("#soaSelectionModal .btn"));
+        }
+
+        function closeSOAModal() {
+            document.getElementById('soaSelectionModal').style.display = 'none';
+        }
+
+        async function processSOASelection() {
+            const selectedMonths = Array.from(document.querySelectorAll('#soaMonthList input:checked')).map(i => i.value);
+            if (selectedMonths.length === 0) return alert("Select at least one month");
+            const records = currentRecords.filter(r => selectedMonths.includes(r.date.substring(0, 7)));
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text(`Statement of Account - ${currentMeterId}`, 20, 20);
+            const tableData = records.map(r => [r.date, r.usage, `PHP ${r.amount}`, r.status]);
+            doc.autoTable({ head: [['Date', 'Usage', 'Amount', 'Status']], body: tableData, startY: 30 });
+            doc.save(`SOA_${currentMeterId}.pdf`);
+            closeSOAModal();
+        }
+
+        function showAddConsumerModal() {
+            document.getElementById('consumerFormTitle').innerText = "Enroll New Consumer";
+            document.getElementById('newMeterId').disabled = false;
+            document.getElementById('addConsumerForm').style.display = 'block';
+            VanillaTilt.init(document.querySelectorAll("#addConsumerForm .btn"));
+        }
+
+        function hideAddConsumerModal() {
+            document.getElementById('newMeterId').value = '';
+            document.getElementById('newAccountName').value = '';
+            document.getElementById('addConsumerForm').style.display = 'none';
+        }
+
+        async function saveConsumer() {
+            const meterId = document.getElementById('newMeterId').value;
+            const accountName = document.getElementById('newAccountName').value;
+            const barangay = document.getElementById('newBarangay').value;
+            const status = document.getElementById('newAccountStatus').value;
+            if (!meterId || !accountName) return alert("Fill all fields");
+
+            const data = { meterId, accountName, barangay, status };
+            // Only set createdAt if it's a new enrollment (meterId field is enabled)
+            if (!document.getElementById('newMeterId').disabled) {
+                data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            }
+
+            await db.collection("consumers").doc(meterId).set(data, { merge: true });
+
+            // Sync with web account if it exists
+            const accountDoc = await db.collection("accounts").doc(meterId).get();
+            if (accountDoc.exists) {
+                await db.collection("accounts").doc(meterId).update({ status: status });
+            }
+
+            alert("Consumer information saved!");
+            hideAddConsumerModal();
+            loadComprehensiveAccounts();
+        }
+
+        async function editConsumer(meterId) {
+            const doc = await db.collection("consumers").doc(meterId).get();
+            if (doc.exists) {
+                const d = doc.data();
+                document.getElementById('consumerFormTitle').innerText = "Edit Consumer: " + meterId;
+                document.getElementById('newMeterId').value = d.meterId;
+                document.getElementById('newMeterId').disabled = true; // Cannot change ID once enrolled
+                document.getElementById('newAccountName').value = d.accountName;
+                document.getElementById('newBarangay').value = d.barangay;
+                document.getElementById('newAccountStatus').value = d.status;
+                document.getElementById('addConsumerForm').style.display = 'block';
+                VanillaTilt.init(document.querySelectorAll("#addConsumerForm .btn"));
+            }
+        }
+
+        async function deleteConsumer(meterId) {
+            if (sessionStorage.getItem("role") !== 'admin') return alert("Only admin can delete accounts.");
+            if (confirm(`Are you sure you want to delete account ${meterId}? This action cannot be undone.`)) {
+                try {
+                    await db.collection("consumers").doc(meterId).delete();
+                    alert("Account deleted successfully");
+                    loadComprehensiveAccounts();
+                } catch (error) {
+                    console.error("Error deleting consumer: ", error);
+                    alert("Error deleting account: " + error.message);
+                }
+            }
+        }
+
+        async function loadComprehensiveAccounts() {
+            const snap = await db.collection("consumers").get();
+            const body = document.getElementById('consumerBody'); body.innerHTML = '';
+            const isAdmin = sessionStorage.getItem("role") === 'admin';
+            snap.forEach(doc => {
+                const d = doc.data();
+                let actions = `<button class="btn btn-primary btn-sm" onclick="editConsumer('${d.meterId}')" data-tilt data-tilt-scale="1.1">EDIT</button>`;
+                if (isAdmin) {
+                    actions += ` <button class="btn btn-danger btn-sm" style="background-color:var(--danger); color:white; margin-left:5px;" onclick="deleteConsumer('${d.meterId}')" data-tilt data-tilt-scale="1.1">DELETE</button>`;
+                }
+                body.innerHTML += `<tr><td>${d.meterId}</td><td>${d.accountName || 'Unnamed'}</td><td>${d.barangay}</td><td>${d.status}</td><td>${actions}</td></tr>`;
+            });
+            VanillaTilt.init(document.querySelectorAll("#consumerTable .btn"));
+        }
+
+        async function loadReportsData() {
+            const snap = await db.collection("billings").get();
+            let total = 0, collected = 0;
+            snap.forEach(doc => { const d = doc.data(); total += (d.amount || 0); if (d.status === 'Paid') collected += (d.amount || 0); });
+            document.getElementById('reportTotalRevenue').innerText = '₱' + total.toLocaleString();
+            document.getElementById('reportTotalCollected').innerText = '₱' + collected.toLocaleString();
+        }
+
+        async function generateRevenueReport() {
+            const snap = await db.collection("billings").get();
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Revenue Report", 20, 20);
+            const data = [];
+            snap.forEach(doc => { const d = doc.data(); data.push([d.date, d.meterId, d.amount, d.status]); });
+            doc.autoTable({ head: [['Date', 'Meter ID', 'Amount', 'Status']], body: data, startY: 30 });
+            doc.save("Revenue_Report.pdf");
+        }
+
+        function previewProfilePic(event) {
+            const reader = new FileReader();
+            reader.onload = () => document.getElementById('adminProfilePic').src = reader.result;
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        async function updateAdminSettings() {
+            const user = sessionStorage.getItem("username");
+            const updates = {
+                fullName: document.getElementById('profileFullName').value,
+                position: document.getElementById('profilePosition').value,
+                profilePic: document.getElementById('adminProfilePic').src
+            };
+            const newPass = document.getElementById('newPass').value;
+            if (newPass) updates.password = newPass;
+            await db.collection("settings").doc(user).set(updates, { merge: true });
+            alert("Profile updated!");
+        }
+
+        function loadInbox() {
+            db.collection("tickets").orderBy("timestamp", "desc").onSnapshot(snap => {
+                const body = document.getElementById('inboxBody'); body.innerHTML = '';
+                snap.forEach(doc => {
+                    const t = doc.data();
+                    const statusOptions = ['Open', 'In Progress', 'On Site', 'Resolved'].map(s =>
+                        `<option value="${s}" ${t.status === s ? 'selected' : ''}>${s}</option>`
+                    ).join('');
+
+                    body.innerHTML += `<tr>
+                        <td><input type="checkbox" class="inbox-checkbox" value="${doc.id}" onclick="updateInboxBatchActions()"></td>
+                        <td>${t.date || 'N/A'}</td>
+                        <td>${t.meterId}</td>
+                        <td>${t.type}</td>
+                        <td>${t.details}</td>
+                        <td><span class="badge ${t.status === 'Resolved' ? 'badge-success' : 'badge-danger'}">${t.status}</span></td>
+                        <td>
+                            <select onchange="updateTicketStatus('${doc.id}', this.value, '${t.meterId}', '${t.type}')" class="btn btn-sm" style="border:1px solid #ddd; padding:5px;">
+                                ${statusOptions}
+                            </select>
+                        </td>
+                    </tr>`;
+                });
+                updateInboxBatchActions();
+            });
+        }
+
+        function toggleSelectAllInbox(master) {
+            const checkboxes = document.querySelectorAll('.inbox-checkbox');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+            updateInboxBatchActions();
+        }
+
+        function updateInboxBatchActions() {
+            const selected = document.querySelectorAll('.inbox-checkbox:checked').length;
+            document.getElementById('inboxBatchActions').style.display = selected > 0 ? 'block' : 'none';
+            if (selected > 0) VanillaTilt.init(document.querySelectorAll("#inboxBatchActions .btn"));
+        }
+
+        async function batchDeleteInbox() {
+            const selectedIds = Array.from(document.querySelectorAll('.inbox-checkbox:checked')).map(cb => cb.value);
+            if (!confirm(`Are you sure you want to delete ${selectedIds.length} tickets?`)) return;
+
+            const batch = db.batch();
+            selectedIds.forEach(id => {
+                const ref = db.collection("tickets").doc(id);
+                batch.delete(ref);
+            });
+
+            try {
+                await batch.commit();
+                alert("Batch delete successful!");
+                document.getElementById('selectAllInbox').checked = false;
+            } catch (error) {
+                alert("Error deleting tickets: " + error.message);
+            }
+        }
+
+        async function updateTicketStatus(id, newStatus, meterId, type) {
+            try {
+                // Update the ticket status
+                await db.collection("tickets").doc(id).update({ status: newStatus });
+
+                // If resolved, handle disconnection/reconnection logic
+                if (newStatus === 'Resolved') {
+                    let newAccountStatus = null;
+                    if (type === 'Disconnection Request') {
+                        newAccountStatus = 'Disconnected';
+                    } else if (type === 'Reconnection Request') {
+                        newAccountStatus = 'Connected';
+                    }
+
+                    if (newAccountStatus) {
+                        await db.collection("consumers").doc(meterId).update({ status: newAccountStatus });
+
+                        // Sync with web account if it exists
+                        const accountDoc = await db.collection("accounts").doc(meterId).get();
+                        if (accountDoc.exists) {
+                            await db.collection("accounts").doc(meterId).update({ status: newAccountStatus });
+                        }
+
+                        alert(`Ticket resolved and account ${meterId} set to ${newAccountStatus}.`);
+                    } else {
+                        alert("Ticket status updated to Resolved.");
+                    }
+                } else {
+                    alert(`Ticket status updated to ${newStatus}.`);
+                }
+            } catch (error) {
+                console.error("Error updating ticket: ", error);
+                alert("Error: " + error.message);
+            }
+        }
+
+        function handleLoginSubmit(e) { e.preventDefault(); attemptLogin(); }
+        function handleSearchSubmit(e) { e.preventDefault(); handleSearch(); }
+        function logout() { sessionStorage.clear(); location.reload(); }
+        checkAuth();
+
+        // Initialize tilt for initial buttons
+        window.addEventListener('load', () => {
+            VanillaTilt.init(document.querySelectorAll(".btn"));
+        });
+    </script>
+</body>
+</html>

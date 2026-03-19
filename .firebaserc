@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "dauin-water-meter-82c31"
+  },
+  "targets": {
+    "dauin-water-meter-82c31": {
+      "hosting": {
+        "treasurer": [
+          "dauin-water-meter-82c31"
+        ],
+        "consumers": [
+          "dauin-consumers"
+        ]
+      }
+    }
+  }
+}

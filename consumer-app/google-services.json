@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "104137748081",
+    "firebase_url": "https://dauin-water-meter-82c31-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "dauin-water-meter-82c31",
+    "storage_bucket": "dauin-water-meter-82c31.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:104137748081:android:0067f138b133863a5135d0",
+        "android_client_info": {
+          "package_name": "com.example.watermeter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2v-VUgG-RLX_Om19aZMgSA9Gz-PEIxgI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:104137748081:android:e41c5535234569e15135d0",
+        "android_client_info": {
+          "package_name": "com.example.watermeter.consumer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2v-VUgG-RLX_Om19aZMgSA9Gz-PEIxgI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

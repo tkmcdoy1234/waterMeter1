@@ -1,0 +1,25 @@
+{
+  "projects": {
+    "default": "dauin-water-meter-82c31"
+  },
+  "targets": {
+    "dauin-water-meter-82c31": {
+      "hosting": {
+        "consumer": [
+          "dauinconsumer-9ac58.web.app"
+        ],
+        "consumer-panel": [
+          "consumerpanel",
+          "dauinconsumer-9ac58"
+        ],
+        "mywebsite": [
+          "my-website"
+        ],
+        "consumerpanel": [
+          "consumer-panel"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

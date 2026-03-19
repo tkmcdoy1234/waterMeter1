@@ -1,0 +1,24 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "billings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "meterId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    }
+  ],
+  "fieldOverrides": []
+}
